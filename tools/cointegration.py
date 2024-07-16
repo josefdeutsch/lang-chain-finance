@@ -1,49 +1,11 @@
 import pandas as pd
-from statsmodels.regression.linear_model import OLS
-from statsmodels.tsa.stattools import adfuller
 from langchain.tools import tool
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tsa.stattools import adfuller
 import numpy as np
 
 @tool
-def calculate_optimal_hedge_ratio(ts1: str, ts2: str):
-
-    """
-    Calculate the optimal hedge ratio and perform the CADF test on the residuals.
-
-    Parameters:
-    df (pd.DataFrame): DataFrame containing the time series data.
-    ts1 (str): Column name of the first time series in the DataFrame.
-    ts2 (str): Column name of the second time series in the DataFrame.
-
-    Returns:
-    tuple: A tuple containing the optimal hedge ratio (beta) and the results of the CADF test on the residuals.
-    """
-    
-    # Build a data frame
-    df = pd.DataFrame()
-    
-    # Calculate optimal hedge ratio "beta"
-    res = OLS(df[ts2], df[ts1]).fit()
-    beta_hr = res.params[0]
-
-    # Calculate the residuals of the linear combination
-    df["res"] = df[ts2] - beta_hr * df[ts1]
-
-    # Calculate and output the CADF test on the residuals
-    cadf = adfuller(df["res"])
-
-    return beta_hr, cadf
-
-
-
-import numpy as np
-from statsmodels.regression.linear_model import OLS
-from statsmodels.tsa.stattools import adfuller
-
-@tool
-def calculate_optimal_hedge_ratio2(ts1: list, ts2: list):
+def calculate_optimal_hedge_ratio(ts1: list, ts2: list):
     """
     Calculate the optimal hedge ratio and perform the CADF test on the residuals.
 

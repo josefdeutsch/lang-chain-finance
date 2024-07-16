@@ -2,10 +2,24 @@ import os
 import numpy as np
 from dotenv import load_dotenv
 from langchain.agents import AgentExecutor, create_openai_tools_agent 
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_openai import OpenAI
 
+llm = OpenAI(temperature=0)
+agent = create_react_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools)
+
+agent_with_chat_history = RunnableWithMessageHistory(
+    agent_executor,
+    # This is needed because in most real world scenarios, a session id is needed
+    # It isn't really used here because we are using a simple in memory ChatMessageHistory
+    lambda session_id: memory,
+    input_messages_key="input",
+    history_messages_key="chat_history",
+)
 from langchain_openai import ChatOpenAI
 
-from tools.cointegration import calculate_optimal_hedge_ratio2
+from tools.cointegration import calculate_optimal_hedge_ratio
 
 
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -36,7 +50,9 @@ prompt = ChatPromptTemplate.from_messages(
 
 llm = ChatOpenAI(model="gpt-3.5-turbo-1106", temperature=0)
 
-tools = [calculate_optimal_hedge_ratio2] + polytool.get_tools()
+#[calculate_optimal_hedge_ratio]
+
+tools = [calculate_optimal_hedge_ratio] + polytool.get_tools()
 
 agent = create_openai_tools_agent(llm, tools, prompt)
 
@@ -47,13 +63,8 @@ agent_executor.invoke(
         "chat_history": [
             HumanMessage(content="Retrieve daily aggregate data for the X:ETHUSD ticker (timespan: 1 day) from 2024-06-06 to 2024-07-07 and for the X:BTCUSD ticker (timespan: 1 day) from 2024-06-06 to 2024-07-07.")
         ],
-        "input": "Calculate the CADF using closing prices."
-    }, {
-        "chat_history": [
-            HumanMessage(content="")
-        ],
-        "input": "Analyze the significance of the p-value relative to the 10% threshold in the CADF test to determine if the time series data are cointegrated, based on the stationarity of the residuals."
+        "input": "Calculate the CADF using close prices."
     }
-    
+
 )
 
