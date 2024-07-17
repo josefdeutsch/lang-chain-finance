@@ -2,6 +2,7 @@ import pandas as pd
 from langchain.tools import tool
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tsa.stattools import adfuller
+
 import numpy as np
 
 @tool

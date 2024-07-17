@@ -10,6 +10,8 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_community.agent_toolkits.polygon.toolkit import PolygonToolkit
 from langchain_community.utilities.polygon import PolygonAPIWrapper
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from tempfile import TemporaryDirectory
 
 # Load environment variables from a .env file
 load_dotenv()
@@ -21,33 +23,29 @@ os.environ["LANGCHAIN_API_KEY"] = os.getenv('LANGCHAIN_API_KEY')
 os.environ["TAVILY_API_KEY"] = os.getenv('TAVILY_API_KEY')
 os.environ["POLYGON_API_KEY"] = os.getenv('POLYGON_API_KEY')
 
-# Define the chat prompt template
+working_directory = os.environ.get("CURRENT_WORKING_DIRECTORY")
+
 prompt = ChatPromptTemplate.from_messages(
     [
-        ("system", "An exceptionally accurate and precise agent processes all input data and delivers comprehensive results, ensuring no information is omitted. This dependable assistant efficiently uses available tools to answer questions, returning all relevant data, and promptly notifying you if any tool is unavailable."),
-        ("user", "Retrieve the aggregate price data for the {symbol} tickers from {last}, to {next}, and save the retrieved data in a CSV file named {symbol}.csv"),
-        MessagesPlaceholder("chat_history", optional=True),
-        MessagesPlaceholder(variable_name="agent_scratchpad"),
-    ]
+       ("system", "An exceptionally accurate and precise agent processes all input data and delivers comprehensive results, ensuring no information is omitted. This dependable assistant efficiently uses available tools to answer questions, returning all relevant data, and promptly notifying you if any tool is unavailable."),
+       ("user", "{input}"),
+       MessagesPlaceholder("chat_history", optional=True),
+       MessagesPlaceholder(variable_name="agent_scratchpad"),
+   ]
 )
-
 # Initialize the language model
 llm = ChatOpenAI(model="gpt-3.5-turbo-1106", temperature=0)
 
 # Create a temporary working directory
-working_directory = TemporaryDirectory()
-os.environ["CURRENT_WORKING_DIRECTORY"] = str(working_directory.name)
-print(str(working_directory.name))
+#working_directory = TemporaryDirectory()
+#working_directory = os.getenv["CURRENT_WORKING_DIRECTORY"]
+print(str(working_directory))
 
 # Initialize file management toolkit
-filetool = FileManagementToolkit(root_dir=str(working_directory.name))
-
-# Initialize Polygon API wrapper
-polygon = PolygonAPIWrapper()
-polytool = PolygonToolkit.from_polygon_api_wrapper(polygon)
+filetool = FileManagementToolkit(root_dir=str(working_directory))
 
 # Get tools from Polygon and file management toolkits
-tools = polytool.get_tools() + filetool.get_tools()
+tools = filetool.get_tools()
 
 # Create the OpenAI tools agent
 agent = create_openai_tools_agent(llm, tools, prompt)
@@ -55,9 +53,13 @@ agent = create_openai_tools_agent(llm, tools, prompt)
 # Initialize the agent executor
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-# Invoke the agent to retrieve and save data
-# Prepare input for the agent with placeholders
+memory = ChatMessageHistory(session_id="polygon-api-query-1234")
 
-# Invoke the agent to retrieve and save data
-# agent_executor.invoke("input_data")
-# Invoke the agent to read the saved data
+agent_with_chat_history = RunnableWithMessageHistory(
+    agent_executor,
+    lambda session_id: memory,
+    input_messages_key="input",
+    history_messages_key="chat_history",
+)
+
+
