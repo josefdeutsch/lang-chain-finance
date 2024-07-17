@@ -36,6 +36,7 @@ llm = ChatOpenAI(model="gpt-3.5-turbo-1106", temperature=0)
 
 # Create a temporary working directory
 working_directory = TemporaryDirectory()
+os.environ["CURRENT_WORKING_DIRECTORY"] = str(working_directory.name)
 print(str(working_directory.name))
 
 # Initialize file management toolkit
@@ -57,15 +58,6 @@ agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 # Invoke the agent to retrieve and save data
 # Prepare input for the agent with placeholders
 
-
 # Invoke the agent to retrieve and save data
-agent_executor.invoke("input_data")
+#agent_executor.invoke("input_data")
 # Invoke the agent to read the saved data
-agent_executor.invoke(
-    {
-        "chat_history": [
-            HumanMessage(content="Read the data from the ETHUSD.csv file to ensure the data is correctly stored and accessible.")
-        ],
-        "input": ""
-    }
-)
