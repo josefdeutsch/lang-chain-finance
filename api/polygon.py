@@ -25,7 +25,7 @@ os.environ["POLYGON_API_KEY"] = os.getenv('POLYGON_API_KEY')
 prompt = ChatPromptTemplate.from_messages(
     [
         ("system", "An exceptionally accurate and precise agent processes all input data and delivers comprehensive results, ensuring no information is omitted. This dependable assistant efficiently uses available tools to answer questions, returning all relevant data, and promptly notifying you if any tool is unavailable."),
-        ("user", "{input}"),
+        ("user", "Retrieve the aggregate price data for the {symbol} tickers from {last}, to {next}, and save the retrieved data in a CSV file named {symbol}.csv"),
         MessagesPlaceholder("chat_history", optional=True),
         MessagesPlaceholder(variable_name="agent_scratchpad"),
     ]
@@ -55,15 +55,11 @@ agent = create_openai_tools_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
 # Invoke the agent to retrieve and save data
-agent_executor.invoke(
-    {
-        "chat_history": [
-            HumanMessage(content="Retrieve the aggregate closing price data for the X:ETHUSD tickers from June 6, 2024, to July 7, 2024, including the open, close, high, low, and volume data.")
-        ],
-        "input": "Save the retrieved data to CSV file: ETHUSD.csv"
-    }
-)
+# Prepare input for the agent with placeholders
 
+
+# Invoke the agent to retrieve and save data
+agent_executor.invoke("input_data")
 # Invoke the agent to read the saved data
 agent_executor.invoke(
     {
