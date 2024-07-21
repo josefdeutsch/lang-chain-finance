@@ -40,6 +40,8 @@ class ChatAgent(metaclass=SingletonMeta):
         os.environ["OPENAI_API_KEY"] = os.getenv('OPENAI_API_KEY')
         os.environ["LANGCHAIN_TRACING_V2"] = os.getenv('LANGCHAIN_TRACING_V2')
         os.environ["LANGCHAIN_API_KEY"] = os.getenv('LANGCHAIN_API_KEY')
+        
+        self.working_directory = os.environ.get("CURRENT_WORKING_DIRECTORY")
 
     def _initialize_components(self):
         # Define the prompt template
@@ -59,11 +61,11 @@ class ChatAgent(metaclass=SingletonMeta):
         self.memory = ChatMessageHistory(session_id="polygon-api-query")
 
         # Create a temporary working directory
-        self.working_directory = TemporaryDirectory()
+        #self.working_directory = TemporaryDirectory()
 
         # Initialize the FileManagementToolkit with the working directory
         filetool = FileManagementToolkit(
-            root_dir=str(self.working_directory.name),
+            root_dir=str(self.working_directory),
             selected_tools=["read_file", "write_file", "list_directory"],
         )
 
@@ -109,31 +111,3 @@ class ChatAgent(metaclass=SingletonMeta):
             raise RuntimeError(f"Failed to invoke the agent: {e}") from e
 
 
-if __name__ == "__main__":
-    chat_agent_instance = ChatAgent.get_instance()
-
-    # Example invocations
-    try:
-        chat_agent_instance.invoke(
-            {"input": "Hello, I am John Doe. I am 32 years old"},
-            config={"configurable": {"session_id": "polygon-api-query"}}
-        )
-
-        chat_agent_instance.invoke(
-            {"input": "Tell me how old John Doe is."},
-            config={"configurable": {"session_id": "polygon-api-query"}}
-        )
-
-        chat_agent_instance.invoke(
-            {"input": "Write file: john_doe.csv"},
-            config={"configurable": {"session_id": "polygon-api-query"}}
-        )
-
-        response = chat_agent_instance.invoke(
-            {"input": "Read file: john_doe.csv"},
-            config={"configurable": {"session_id": "polygon-api-query"}}
-        )
-
-        print(response)
-    except RuntimeError as e:
-        print(f"An error occurred: {e}")

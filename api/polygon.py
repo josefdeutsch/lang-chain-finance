@@ -37,7 +37,6 @@ llm = ChatOpenAI(model="gpt-3.5-turbo-1106", temperature=0)
 # Create a temporary working directory
 working_directory = TemporaryDirectory()
 os.environ["CURRENT_WORKING_DIRECTORY"] = str(working_directory.name)
-print(str(working_directory.name))
 
 # Initialize file management toolkit
 filetool = FileManagementToolkit(root_dir=str(working_directory.name))
