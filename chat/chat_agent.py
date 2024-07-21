@@ -9,6 +9,7 @@ from langchain_openai import ChatOpenAI
 from langchain_community.agent_toolkits import FileManagementToolkit
 from tempfile import TemporaryDirectory
 
+
 class SingletonMeta(type):
     """
     A thread-safe implementation of Singleton.
