@@ -1,6 +1,6 @@
 import streamlit as st
 import api.polygon as pol
-import chat.conversation as ct
+from chat.chat_agent import ChatAgent
 import os
 
 # Set the working directory
@@ -77,11 +77,21 @@ new_message = st.text_input("Enter your message:")
 if st.button("Send"):
     if new_message:
         # Append the new message to the chat history
+        chat_agent_instance = ChatAgent.get_instance()
         st.session_state['chat_history'].append(f"You: {new_message}")
         
-        # Simulate a response (you can replace this with actual logic)
-        response = f"Joseph's Data Analysis Assistant: Received your message '{new_message}'"
-        response = ct.agent_with_chat_history.invoke({"input": "{new_message}"}, config={"configurable": {"session_id": "<foo>"}})
+        try:
+            response = chat_agent_instance.invoke(
+                {"input": f"{new_message}"},
+                config={"configurable": {"session_id": "polygon-api-query"}}
+            )
+        except RuntimeError as e:
+            print(f"An error occurred: {e}")
+     
+
+
+        # Cleanup resources
+        #chat_agent.cleanup()
         st.session_state['chat_history'].append(response)
         
         # Clear the input field after sending the message

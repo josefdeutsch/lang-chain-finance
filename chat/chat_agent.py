@@ -1,0 +1,139 @@
+import os
+import threading
+from dotenv import load_dotenv
+from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_openai import ChatOpenAI
+from langchain_community.agent_toolkits import FileManagementToolkit
+from tempfile import TemporaryDirectory
+
+class SingletonMeta(type):
+    """
+    A thread-safe implementation of Singleton.
+    """
+    _instances = {}
+    _lock = threading.Lock()
+
+    def __call__(cls, *args, **kwargs):
+        with cls._lock:
+            if cls not in cls._instances:
+                instance = super().__call__(*args, **kwargs)
+                cls._instances[cls] = instance
+        return cls._instances[cls]
+
+class ChatAgent(metaclass=SingletonMeta):
+    """
+    A singleton class to manage agent invocation.
+    """
+
+    def __init__(self):
+        """
+        Initialize the ChatAgent instance.
+        """
+        self._initialize_environment()
+        self._initialize_components()
+
+    def _initialize_environment(self):
+        load_dotenv()
+        os.environ["OPENAI_API_KEY"] = os.getenv('OPENAI_API_KEY')
+        os.environ["LANGCHAIN_TRACING_V2"] = os.getenv('LANGCHAIN_TRACING_V2')
+        os.environ["LANGCHAIN_API_KEY"] = os.getenv('LANGCHAIN_API_KEY')
+
+    def _initialize_components(self):
+        # Define the prompt template
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", "An exceptionally accurate and precise agent processes all input data and delivers comprehensive results, ensuring no information is omitted. This dependable assistant efficiently uses available tools to answer questions, returning all relevant data, and promptly notifying you if any tool is unavailable."),
+                ("user", "{input}"),
+                MessagesPlaceholder("chat_history", optional=True),
+                MessagesPlaceholder(variable_name="agent_scratchpad"),
+            ]
+        )
+
+        # Initialize the language model
+        llm = ChatOpenAI(model="gpt-3.5-turbo-1106", temperature=0)
+
+        # Initialize chat history
+        self.memory = ChatMessageHistory(session_id="polygon-api-query")
+
+        # Create a temporary working directory
+        self.working_directory = TemporaryDirectory()
+
+        # Initialize the FileManagementToolkit with the working directory
+        filetool = FileManagementToolkit(
+            root_dir=str(self.working_directory.name),
+            selected_tools=["read_file", "write_file", "list_directory"],
+        )
+
+        tools = filetool.get_tools()
+
+        # Create the agent
+        agent = create_openai_tools_agent(llm, tools, prompt)
+
+        # Initialize the agent executor
+        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+        # Wrap the agent with chat history
+        self.agent_with_chat_history = RunnableWithMessageHistory(
+            agent_executor,
+            lambda session_id: self.memory,
+            input_messages_key="input",
+            history_messages_key="chat_history",
+        )
+
+    @classmethod
+    def get_instance(cls):
+        """
+        Get the singleton instance of the class.
+        """
+        return cls()
+
+    def invoke(self, input_data, config):
+        """
+        Invoke the agent with the given input data and configuration.
+        
+        Args:
+            input_data (dict): The input data for the agent.
+            config (dict): The configuration for the agent.
+        
+        Returns:
+            dict: The response from the agent.
+        """
+        try:
+            response = self.agent_with_chat_history.invoke(input_data, config)
+            return response
+        except Exception as e:
+            # Log the exception here as needed
+            raise RuntimeError(f"Failed to invoke the agent: {e}") from e
+
+
+if __name__ == "__main__":
+    chat_agent_instance = ChatAgent.get_instance()
+
+    # Example invocations
+    try:
+        chat_agent_instance.invoke(
+            {"input": "Hello, I am John Doe. I am 32 years old"},
+            config={"configurable": {"session_id": "polygon-api-query"}}
+        )
+
+        chat_agent_instance.invoke(
+            {"input": "Tell me how old John Doe is."},
+            config={"configurable": {"session_id": "polygon-api-query"}}
+        )
+
+        chat_agent_instance.invoke(
+            {"input": "Write file: john_doe.csv"},
+            config={"configurable": {"session_id": "polygon-api-query"}}
+        )
+
+        response = chat_agent_instance.invoke(
+            {"input": "Read file: john_doe.csv"},
+            config={"configurable": {"session_id": "polygon-api-query"}}
+        )
+
+        print(response)
+    except RuntimeError as e:
+        print(f"An error occurred: {e}")
