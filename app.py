@@ -1,11 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 import os
 import api.polygon as pol
 from chat.chat_agent import ChatAgent
-from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Necessary for session management
+app.secret_key = 'your_secret_key'  # Necessary for flash messages and session management
 
 # Set the working directory
 working_directory = os.environ.get("CURRENT_WORKING_DIRECTORY", '.')  # Replace with your actual working directory path
@@ -33,39 +32,32 @@ def index():
             pol.agent_executor.invoke(input_data)
 
             # Mark the form as submitted
-            session['submitted'] = True
+            flash("Query submitted successfully.", "success")
         else:
             flash("Please fill out all fields.", "error")
 
     generated_files = get_generated_files()
-    return render_template('index.html', generated_files=generated_files)
+    return render_template('index.html', generated_files=generated_files, last_message=session.pop('last_message', ''))
 
-@app.route('/chat', methods=['GET', 'POST'])
+@app.route('/chat', methods=['POST'])
 def chat():
-    if 'chat_history' not in session:
-        session['chat_history'] = []
+    new_message = request.form.get('new_message')
+    if new_message:
+        chat_agent_instance = ChatAgent.get_instance()
 
-    if request.method == 'POST':
-        new_message = request.form.get('new_message')
-        if new_message:
-            # Append the new message to the chat history
-            chat_agent_instance = ChatAgent.get_instance()
-            session['chat_history'].append(f"You: {new_message}")
+        try:
+            response = chat_agent_instance.invoke(
+                {"input": new_message},
+                config={"configurable": {"session_id": "polygon-api-query"}}
+            )
+        except RuntimeError as e:
+            response = f"An error occurred: {e}"
 
-            try:
-                response = chat_agent_instance.invoke(
-                    {"input": f"{new_message}"},
-                    config={"configurable": {"session_id": "polygon-api-query"}}
-                )
-            except RuntimeError as e:
-                response = f"An error occurred: {e}"
+        session['last_message'] = f"You: {new_message}<br>Bot: {response}"
+    else:
+        flash("Please enter a message.", "error")
 
-            session['chat_history'].append(response)
-            return redirect(url_for('chat'))
-        else:
-            flash("Please enter a message.", "error")
-
-    return render_template('chat.html', chat_history=session['chat_history'])
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True)

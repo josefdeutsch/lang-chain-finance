@@ -1,31 +1,85 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Joseph's Data Analysis Assistant</title>
+    <meta charset="UTF-8">
+    <title>Polygon API Query</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .container {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .calendar {
+            margin: 20px 0;
+        }
+        .chat-container {
+            height: calc(100vh - 220px);
+            border: 1px solid #ddd;
+            padding: 15px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .submit-form {
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Joseph's Data Analysis Assistant</h1>
-    
-    <form method="POST">
-        <label for="symbol">Symbol:</label>
-        <input type="text" id="symbol" name="symbol"><br><br>
-        
-        <label for="last_date">Last Date:</label>
-        <input type="date" id="last_date" name="last_date"><br><br>
-        
-        <label for="next_date">Next Date:</label>
-        <input type="date" id="next_date" name="next_date"><br><br>
-        
-        <button type="submit">Submit</button>
-    </form>
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <h2>Submit Query</h2>
+            <form method="POST" class="submit-form">
+                <div class="form-group">
+                    <label for="symbol">Symbol:</label>
+                    <input type="text" class="form-control" id="symbol" name="symbol">
+                </div>
+                <div class="form-group">
+                    <label for="last_date">Last Date:</label>
+                    <input type="date" class="form-control" id="last_date" name="last_date">
+                </div>
+                <div class="form-group">
+                    <label for="next_date">Next Date:</label>
+                    <input type="date" class="form-control" id="next_date" name="next_date">
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
 
-    <h2>Generated Files</h2>
-    <ul>
-        {% for file in generated_files %}
-        <li>{{ file }}</li>
-        {% endfor %}
-    </ul>
-    
-    <a href="{{ url_for('chat') }}">Go to Chat</a>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                <div class="alert alert-warning" role="alert">
+                  {% for category, message in messages %}
+                    {{ message }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            <h2>Generated Files</h2>
+            <ul>
+                {% for file in generated_files %}
+                    <li>{{ file }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="col-md-8">
+            <h2>Chat Window</h2>
+            <div class="chat-container" id="chat-container">
+                <div>{{ last_message|safe }}</div>
+            </div>
+            <form method="POST" action="{{ url_for('chat') }}">
+                <div class="form-group">
+                    <label for="new_message">Your Message:</label>
+                    <input type="text" class="form-control" id="new_message" name="new_message">
+                </div>
+                <button type="submit" class="btn btn-primary">Send</button>
+            </form>
+        </div>
+    </div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
