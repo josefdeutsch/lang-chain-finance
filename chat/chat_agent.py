@@ -26,6 +26,15 @@ class SingletonMeta(type):
                 cls._instances[cls] = instance
         return cls._instances[cls]
 
+    def reset_instance(cls):
+        """
+        Reset the singleton instance.
+        """
+        with cls._lock:
+            if cls in cls._instances:
+                del cls._instances[cls]
+
+
 class ChatAgent(metaclass=SingletonMeta):
     """
     A singleton class to manage agent invocation.
@@ -43,7 +52,7 @@ class ChatAgent(metaclass=SingletonMeta):
         os.environ["OPENAI_API_KEY"] = os.getenv('OPENAI_API_KEY')
         os.environ["LANGCHAIN_TRACING_V2"] = os.getenv('LANGCHAIN_TRACING_V2')
         os.environ["LANGCHAIN_API_KEY"] = os.getenv('LANGCHAIN_API_KEY')
-        
+
         self.working_directory = os.environ.get("CURRENT_WORKING_DIRECTORY")
 
     def _initialize_components(self):
@@ -64,7 +73,7 @@ class ChatAgent(metaclass=SingletonMeta):
         self.memory = ChatMessageHistory(session_id="polygon-api-query")
 
         # Create a temporary working directory
-        #self.working_directory = TemporaryDirectory()
+        # self.working_directory = TemporaryDirectory()
 
         # Initialize the FileManagementToolkit with the working directory
         filetool = FileManagementToolkit(
@@ -72,17 +81,17 @@ class ChatAgent(metaclass=SingletonMeta):
             selected_tools=["read_file", "write_file", "list_directory"],
         )
 
-        tools = [calculate_optimal_hedge_ratio,calculate_hurst_exponent] + filetool.get_tools()
+        tools = [calculate_optimal_hedge_ratio, calculate_hurst_exponent] + filetool.get_tools()
 
         # Create the agent
         agent = create_openai_tools_agent(llm, tools, prompt)
 
         # Initialize the agent executor
-        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+        self.agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
         # Wrap the agent with chat history
         self.agent_with_chat_history = RunnableWithMessageHistory(
-            agent_executor,
+            self.agent_executor,
             lambda session_id: self.memory,
             input_messages_key="input",
             history_messages_key="chat_history",
@@ -98,11 +107,11 @@ class ChatAgent(metaclass=SingletonMeta):
     def invoke(self, input_data, config):
         """
         Invoke the agent with the given input data and configuration.
-        
+
         Args:
             input_data (dict): The input data for the agent.
             config (dict): The configuration for the agent.
-        
+
         Returns:
             dict: The response from the agent.
         """
@@ -113,4 +122,12 @@ class ChatAgent(metaclass=SingletonMeta):
             # Log the exception here as needed
             raise RuntimeError(f"Failed to invoke the agent: {e}") from e
 
-
+    def cleanup(self):
+        """
+        Cleanup resources used by the ChatAgent.
+        """
+        # Add any resource cleanup code here, such as closing files or database connections
+        # For example, if using TemporaryDirectory:
+        if isinstance(self.working_directory, TemporaryDirectory):
+            self.working_directory.cleanup()
+        # Cleanup any other resources if needed

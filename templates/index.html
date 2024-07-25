@@ -64,7 +64,10 @@
         </div>
 
         <div class="col-md-8">
-            <h2>Chat Window</h2>
+            <h2>
+                Chat Window
+                <button id="new-chat-btn" class="btn btn-secondary btn-sm float-right">New Chat</button>
+            </h2>
             <div class="chat-container" id="chat-container">
                 <div>{{ last_message|safe }}</div>
             </div>
@@ -81,5 +84,20 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    document.getElementById('new-chat-btn').addEventListener('click', function() {
+        fetch('/reset', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then(response => response.json())
+          .then(data => {
+              alert(data.message);
+              // Optionally, you can clear the chat window here if needed
+              document.getElementById('chat-container').innerHTML = '';
+          }).catch(error => console.error('Error:', error));
+    });
+</script>
 </body>
 </html>

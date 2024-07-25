@@ -48,14 +48,3 @@ def calculate_hurst_exponent(ts):
 
 
 
-def calculate_cumulative_sum(params: list) -> float: 
-    """
-    Calculate the logarithm of the cumulative sum of a list.
-
-    Args:
-        params (List[float]): A list of numerical values.
-
-    Returns:
-        float: The logarithm of the cumulative sum of the list.
-    """
-    return np.log(np.cumsum(params))
