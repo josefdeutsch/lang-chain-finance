@@ -2,6 +2,8 @@ import os
 import threading
 from dotenv import load_dotenv
 from langchain.agents import AgentExecutor, create_openai_tools_agent
+from chat.cointegration import calculate_optimal_hedge_ratio
+from chat.hurstexponent import calculate_hurst_exponent
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -70,7 +72,7 @@ class ChatAgent(metaclass=SingletonMeta):
             selected_tools=["read_file", "write_file", "list_directory"],
         )
 
-        tools = filetool.get_tools()
+        tools = [calculate_optimal_hedge_ratio,calculate_hurst_exponent] + filetool.get_tools()
 
         # Create the agent
         agent = create_openai_tools_agent(llm, tools, prompt)

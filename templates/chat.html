@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat with Joseph's Data Analysis Assistant</title>
+</head>
+<body>
+    <h1>Chat with Joseph's Data Analysis Assistant</h1>
+
+    <div>
+        {% for message in chat_history %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+
+    <form method="POST">
+        <input type="text" name="new_message" placeholder="Enter your message">
+        <button type="submit">Send</button>
+    </form>
+
+    <a href="{{ url_for('index') }}">Back to Home</a>
+</body>
+</html>

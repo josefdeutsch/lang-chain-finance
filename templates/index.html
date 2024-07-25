@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Joseph's Data Analysis Assistant</title>
+</head>
+<body>
+    <h1>Joseph's Data Analysis Assistant</h1>
+    
+    <form method="POST">
+        <label for="symbol">Symbol:</label>
+        <input type="text" id="symbol" name="symbol"><br><br>
+        
+        <label for="last_date">Last Date:</label>
+        <input type="date" id="last_date" name="last_date"><br><br>
+        
+        <label for="next_date">Next Date:</label>
+        <input type="date" id="next_date" name="next_date"><br><br>
+        
+        <button type="submit">Submit</button>
+    </form>
+
+    <h2>Generated Files</h2>
+    <ul>
+        {% for file in generated_files %}
+        <li>{{ file }}</li>
+        {% endfor %}
+    </ul>
+    
+    <a href="{{ url_for('chat') }}">Go to Chat</a>
+</body>
+</html>
