@@ -60,7 +60,7 @@ def chat():
         except RuntimeError as e:
             response = f"An error occurred: {e}"
 
-        session['last_message'] = f"You: {new_message}<br>Bot: {response}"
+        session['last_message'] = f"You: {new_message}<br>Bot: {response['output']}"
     else:
         flash("Please enter a message.", "error")
 

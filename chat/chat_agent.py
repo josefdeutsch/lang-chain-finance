@@ -4,8 +4,10 @@ from dotenv import load_dotenv
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from chat.cointegration import calculate_optimal_hedge_ratio
 from chat.hurstexponent import calculate_hurst_exponent
+from chat.desc import explain_hurst_exponent
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.runnables.retry import RunnableRetry
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 from langchain_community.agent_toolkits import FileManagementToolkit
@@ -81,7 +83,9 @@ class ChatAgent(metaclass=SingletonMeta):
             selected_tools=["read_file", "write_file", "list_directory"],
         )
 
-        tools = [calculate_optimal_hedge_ratio, calculate_hurst_exponent] + filetool.get_tools()
+        tools = [calculate_optimal_hedge_ratio, 
+                 calculate_hurst_exponent, 
+                 explain_hurst_exponent] + filetool.get_tools()
 
         # Create the agent
         agent = create_openai_tools_agent(llm, tools, prompt)
@@ -95,6 +99,12 @@ class ChatAgent(metaclass=SingletonMeta):
             lambda session_id: self.memory,
             input_messages_key="input",
             history_messages_key="chat_history",
+        )
+        self.agent_with_chat_history_retries = RunnableRetry(
+            bound= self.agent_with_chat_history,
+            retry_exception_types=(ValueError,),
+            max_attempt_number=2,
+            wait_exponential_jitter=True
         )
 
     @classmethod
@@ -116,7 +126,7 @@ class ChatAgent(metaclass=SingletonMeta):
             dict: The response from the agent.
         """
         try:
-            response = self.agent_with_chat_history.invoke(input_data, config)
+            response = self.agent_with_chat_history_retries.invoke(input_data, config)
             return response
         except Exception as e:
             # Log the exception here as needed

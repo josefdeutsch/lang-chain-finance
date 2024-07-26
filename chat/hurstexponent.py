@@ -10,7 +10,6 @@ def calculate_hurst_exponent(ts):
     """
     Calculate the Hurst exponent of a time series.
 
-
     Parameters:
     ts (list): A list representing the time series data.
 
