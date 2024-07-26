@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, render_template, request, redirect, url_for, flash, session
+import asyncio
+from flask import Flask, jsonify, logging, render_template, request, redirect, url_for, flash, session
 import os
 import api.polygon as pol
 from chat.chat_agent import ChatAgent, SingletonMeta
@@ -47,20 +48,29 @@ def index():
     return render_template('index.html', generated_files=generated_files, last_message=session.pop('last_message', ''))
 
 @app.route('/chat', methods=['POST'])
-def chat():
+async def chat():
     new_message = request.form.get('new_message')
     if new_message:
         chat_agent_instance = ChatAgent.get_instance()
 
         try:
-            response = chat_agent_instance.invoke(
-                {"input": new_message},
-                config={"configurable": {"session_id": "polygon-api-query"}}
+            # Ensure the invoke method is called correctly within a thread
+            response = await asyncio.to_thread(
+                chat_agent_instance.invoke,
+                {"input": new_message},  # input_data argument
+                {"configurable": {"session_id": "polygon-api-query"}}  # config argument
             )
+            if 'output' in response:
+                session['last_message'] = f"You: {new_message}<br>Bot: {response['output']}"
+            else:
+                logging.error(f"Unexpected response format: {response}")
+                session['last_message'] = f"You: {new_message}<br>Bot: An unexpected error occurred."
         except RuntimeError as e:
-            response = f"An error occurred: {e}"
-
-        session['last_message'] = f"You: {new_message}<br>Bot: {response['output']}"
+            logging.error(f"Runtime error: {e}")
+            session['last_message'] = f"You: {new_message}<br>Bot: An error occurred: {e}"
+        except Exception as e:
+            logging.error(f"General error: {e}")
+            session['last_message'] = f"You: {new_message}<br>Bot: An unexpected error occurred."
     else:
         flash("Please enter a message.", "error")
 
